@@ -1,7 +1,10 @@
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'data/ClientModel.dart';
+import 'data/Database.dart';
+import 'dart:math' as math;
 
 void main() {
   runApp(MyApp());
@@ -29,7 +32,7 @@ class MyApp extends StatelessWidget {
         // closer together (more dense) than on mobile platforms.
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(title: 'Flutter Demo Sqlite'),
     );
   }
 }
@@ -53,6 +56,12 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  // data for testing
+  List<Client> testClients = [
+    Client(firstName: "Mickel", lastName: "Adeneye", blocked: false),
+    Client(firstName: "Samuel", lastName: "Adeniyi", blocked: true),
+    Client(firstName: "Daniel", lastName: "Adeola", blocked: false),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -69,8 +78,51 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: FutureBuilder<List<Client>>(
-
-      )
+          future: DBProvider.db.getAllClients(),
+          builder: (BuildContext context, AsyncSnapshot<List<Client>> snapshot) {
+            if (snapshot.hasData) {
+              return ListView.builder(
+                itemCount: snapshot.data.length,
+                itemBuilder: (BuildContext context, int index) {
+                  Client item = snapshot.data[index];
+                  return Dismissible(
+                    key: UniqueKey(),
+                    background: Container(color: Colors.red),
+                    onDismissed: (direction) {
+                      DBProvider.db.deleteClient(item.id);
+                    },
+                    child: ListTile(
+                      title: Text(item.lastName),
+                      leading:Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          Text(item.id.toString())
+                        ],
+                      ),
+                      trailing: Checkbox(
+                        onChanged: (bool value) {
+                          DBProvider.db.blockOrUnblock(item);
+                          setState(() {});
+                        },
+                        value: item.blocked,
+                      ),
+                    ),
+                  );
+                },
+              );
+            } else {
+              return Center(child: CircularProgressIndicator());
+            }
+          }
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.add),
+        onPressed: () async {
+          Client rnd = testClients[math.Random().nextInt(testClients.length)];
+          await DBProvider.db.createClient(rnd);
+          setState(() {});
+        },
+      ),
     );
   }
 }
