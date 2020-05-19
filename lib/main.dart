@@ -1,6 +1,7 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttersqlite/bloc/DatabaseBloc.dart';
 
 import 'data/ClientModel.dart';
 import 'data/Database.dart';
@@ -32,7 +33,7 @@ class MyApp extends StatelessWidget {
         // closer together (more dense) than on mobile platforms.
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: MyHomePage(title: 'Flutter Demo Sqlite'),
+      home: MyHomePage(title: 'Flutter Demo Bloc'),
     );
   }
 }
@@ -63,11 +64,19 @@ class _MyHomePageState extends State<MyHomePage> {
     Client(firstName: "Daniel", lastName: "Adeola", blocked: false),
   ];
 
+  final bloc = ClientsBloc();
+
+  @override
+  void dispose() {
+    bloc.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
     // by the _incrementCounter method above.
-    //
+
     // The Flutter framework has been optimized to make rerunning build methods
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
@@ -77,22 +86,23 @@ class _MyHomePageState extends State<MyHomePage> {
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
-      body: FutureBuilder<List<Client>>(
-          future: DBProvider.db.getAllClients(),
+      body: StreamBuilder<List<Client>>(
+          stream: bloc.clients,
           builder: (BuildContext context, AsyncSnapshot<List<Client>> snapshot) {
             if (snapshot.hasData) {
               return ListView.builder(
                 itemCount: snapshot.data.length,
                 itemBuilder: (BuildContext context, int index) {
                   Client item = snapshot.data[index];
+
                   return Dismissible(
                     key: UniqueKey(),
                     background: Container(color: Colors.red),
                     onDismissed: (direction) {
-                      DBProvider.db.deleteClient(item.id);
+                      bloc.delete(item.id);
                     },
                     child: ListTile(
-                      title: Text(item.lastName),
+                      title: Text(item.lastName +" "+item.firstName),
                       leading:Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: <Widget>[
@@ -101,7 +111,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       ),
                       trailing: Checkbox(
                         onChanged: (bool value) {
-                          DBProvider.db.blockOrUnblock(item);
+                          bloc.blockUnblock(item);
                           setState(() {});
                         },
                         value: item.blocked,
@@ -119,8 +129,7 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Icon(Icons.add),
         onPressed: () async {
           Client rnd = testClients[math.Random().nextInt(testClients.length)];
-          await DBProvider.db.createClient(rnd);
-          setState(() {});
+          bloc.add(rnd);
         },
       ),
     );
