@@ -1,14 +1,24 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 import 'data/ClientModel.dart';
 import 'data/Database.dart';
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
+
+import 'detail.dart';
+import 'homepage.dart';
 
 void main() {
   runApp(MyApp());
 }
+
+const HomePage = "/";
+const DetailPage = "/detail";
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
@@ -32,13 +42,28 @@ class MyApp extends StatelessWidget {
         // closer together (more dense) than on mobile platforms.
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: MyHomePage(title: 'Flutter Demo Sqlite'),
+      onGenerateRoute: _route(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
+RouteFactory _route(){
+  return (settings) {
+    final Map<String, dynamic> arguments = settings.arguments;
+    Widget screen;
+    switch (settings.name) {
+      case HomePage:
+        screen = MyHomePage(title: 'Flutter Demo Sqlite');
+        break;
+      case DetailPage:
+        screen = DetailScreen(client: arguments["client"]);
+        break;
+      default:
+        return null;
+    }
+    return MaterialPageRoute(builder: (BuildContext context) => screen);
+  };
+}
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
